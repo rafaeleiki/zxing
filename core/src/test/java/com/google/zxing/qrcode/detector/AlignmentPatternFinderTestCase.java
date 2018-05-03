@@ -10,11 +10,11 @@ import com.google.zxing.ResultPointCallback;
 import com.google.zxing.common.BitMatrix;
 
 public class AlignmentPatternFinderTestCase extends Assert {
-	
-	private static BitMatrix matrix; 
+
+	private static BitMatrix matrix;
 	private static ResultPointCallback resultPointCallback;
-	private static AlignmentPatternFinder apf; 
-	
+	private static AlignmentPatternFinder apf;
+
 	@BeforeClass
 	public static void before() {
 		matrix = new BitMatrix(100);
@@ -35,19 +35,19 @@ public class AlignmentPatternFinderTestCase extends Assert {
 		matrix.set(98, 95);
 		matrix.set(98, 99);
 	}
-	
+
 	@Test
 	public void testValid1() throws NotFoundException {
 	    apf = new AlignmentPatternFinder(matrix, 0,0, 100, 100, 1, resultPointCallback);
 	    testValid(apf);
-	    
+
 	}
-	
+
 	@Test
 	public void testValid2() throws NotFoundException {
 	    apf = new AlignmentPatternFinder(matrix, 95,95, 5, 5, 1, resultPointCallback);
 	    testValid(apf);
-	    
+
 	}
 
 	private static BitMatrix topPattern() {
@@ -70,68 +70,65 @@ public class AlignmentPatternFinderTestCase extends Assert {
 		m.set(3, 0);
 		m.set(3, 5);
 		return m;
-		
+
 	}
-	
-	@Test(expected = Error.class) 
-	public void testInvalidX1(){
+
+	@Test(expected = NotFoundException.class)
+	public void testInvalidX1() throws Exception {
 	    apf = new AlignmentPatternFinder(topPattern(), -1,0,6, 5, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
+
 	}
-	
-	
-	@Test(expected = Error.class) 
-	public void testInvalidX2(){
+
+
+	@Test(expected = NotFoundException.class)
+	public void testInvalidX2() throws Exception {
 	    apf = new AlignmentPatternFinder(matrix, 96,0,5, 100, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
-	}
-	
 
-	@Test(expected = Error.class) 
-	public void testInvalidY1(){
+	}
+
+
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
+	public void testInvalidY1() throws Exception {
 	    apf = new AlignmentPatternFinder(topPattern(), 0,-1,5, 6, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
-	}
-	
-	@Test(expected = Error.class) 
-	public void testInvalidY2(){
-	    apf = new AlignmentPatternFinder(matrix, 0,96,100, 4, 1, resultPointCallback);
-	    AlignmentPattern ap = apf.find();
-	    
-	}
-	
 
-	@Test(expected = Error.class) 
-	public void testInvalidheight1(){
-	    apf = new AlignmentPatternFinder(matrix, 95,95,5, 4, 1, resultPointCallback);
-	    AlignmentPattern ap = apf.find();
-	    
 	}
-	
-	@Test(expected = Error.class) 
-	public void testInvalidheight2(){
+
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
+	public void testInvalidY2() throws Exception {
+	    apf = new AlignmentPatternFinder(matrix, 0,96,100, 5, 1, resultPointCallback);
+	    AlignmentPattern ap = apf.find();
+
+	}
+
+
+	@Test(expected = NotFoundException.class)
+	public void testInvalidHeight1() throws Exception {
+	    apf = new AlignmentPatternFinder(matrix, 97,97,3, 2, 1, resultPointCallback);
+	    AlignmentPattern ap = apf.find();
+	}
+
+	@Test(expected = NotFoundException.class)
+	public void testInvalidHeight2() throws Exception {
 	    apf = new AlignmentPatternFinder(matrix, 0,0,100, 4, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
 	}
-	
-	@Test(expected = Error.class) 
-	public void testInvalidwidth1(){
-	    apf = new AlignmentPatternFinder(matrix, 95,95,4, 5, 1, resultPointCallback);
+
+	@Test(expected = NotFoundException.class)
+	public void testInvalidWidth1() throws Exception {
+	    apf = new AlignmentPatternFinder(matrix, 97,97,2, 3, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
 	}
-	
-	@Test(expected = Error.class) 
-	public void testInvalidwidth2(){
-	    apf = new AlignmentPatternFinder(matrix, 0,0,4, 100, 1, resultPointCallback);
+
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
+	public void testInvalidWidth2() throws Exception {
+	    apf = new AlignmentPatternFinder(matrix, 0,0,100, 101, 1, resultPointCallback);
 	    AlignmentPattern ap = apf.find();
-	    
+
 	}
-	
+
 	private static void testValid(AlignmentPatternFinder apf) throws NotFoundException {
 		  AlignmentPattern ap = new AlignmentPattern(97.5f, 97.5f, 1);
 	    assertEquals(ap, apf.find());
