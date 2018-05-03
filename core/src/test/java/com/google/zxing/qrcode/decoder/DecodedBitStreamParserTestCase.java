@@ -16,9 +16,12 @@
 
 package com.google.zxing.qrcode.decoder;
 
+import com.google.zxing.FormatException;
 import com.google.zxing.common.BitSourceBuilder;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Tests {@link DecodedBitStreamParser}.
@@ -26,6 +29,9 @@ import org.junit.Test;
  * @author Sean Owen
  */
 public final class DecodedBitStreamParserTestCase extends Assert {
+
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testSimpleByteMode() throws Exception {
@@ -79,6 +85,85 @@ public final class DecodedBitStreamParserTestCase extends Assert {
     String result = DecodedBitStreamParser.decode(builder.toByteArray(),
         Version.getVersionForNumber(1), null, null).getText();
     assertEquals("\u963f", result);
+  }
+
+  @Test
+  public void testNumericWithPairDigitsAtTheEnd() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x01, 4);   // Numeric mode
+    builder.write(0x08, 10);  // 8 digits will be read
+    builder.write(0x7B, 10);  // 123 in hex
+    builder.write(0x1C8, 10); // 456 in hex
+    builder.write(0x4E, 7);   // 78 in hex
+    String result = DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
+    assertEquals("12345678", result);
+  }
+
+  @Test
+  public void testNumericWithSingleDigitAtTheEnd() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x01, 4);  // Numeric mode
+    builder.write(0x04, 10); // 4 digits will be read
+    builder.write(0x7B, 10); // 123 in hex
+    builder.write(0x04, 4);  // 4 in hex
+    String result = DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
+    assertEquals("1234", result);
+  }
+
+  @Test
+  public void testAlphanumeric() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x002, 4);  // Alphanumeric mode
+    builder.write(0x005, 9);  // 5 digits will be read
+    builder.write(0x1C3, 11); // A1 in hex
+    builder.write(0x1F1, 11); // B2 in hex
+    builder.write(0x00C, 6);  // C in hex
+    String result = DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
+    assertEquals("A1B2C", result);
+  }
+
+  @Test
+  public void testAlphanumericWithFNC1() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x005, 4);  // FNC1 first position mode
+    builder.write(0x002, 4);  // Alphanumeric mode
+    builder.write(0x006, 9);  // 6 digits
+    builder.write(0x6B8, 11); // %A in hex
+    builder.write(0x6D4, 11); // %% in hex
+    builder.write(0x215, 11); // B% in hex
+    String result = DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
+
+    // The alphanumeric string is %A%%B%
+    // Because of FNC1 should be decoded as [0x1d]A%B[0x1d]
+    assertEquals("\u001dA%B\u001d", result);
+  }
+
+  @Test
+  public void testInvalidAlphanumeric() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x002, 4); // Alphanumeric mode
+    builder.write(0x004, 9); // 4 digits expected
+    builder.write(0x6B8, 5); // but only two (%A) were given
+
+    exception.expect(FormatException.class);
+    DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
+  }
+
+  @Test
+  public void testInvalidSingleAlphanumeric() throws Exception {
+    BitSourceBuilder builder = new BitSourceBuilder();
+    builder.write(0x02, 4); // Alphanumeric mode
+    builder.write(0x01, 9); // 1 digit is expected
+    builder.write(0x01, 3); // but it has less bits than it should
+
+    exception.expect(FormatException.class);
+    DecodedBitStreamParser.decode(builder.toByteArray(),
+      Version.getVersionForNumber(1), null, null).getText();
   }
 
   // TODO definitely need more tests here

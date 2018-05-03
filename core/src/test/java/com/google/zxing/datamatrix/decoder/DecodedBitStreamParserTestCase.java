@@ -41,7 +41,38 @@ public final class DecodedBitStreamParserTestCase extends Assert {
     String decodedString = DecodedBitStreamParser.decode(bytes).getText();
     assertEquals("00019899", decodedString);
   }
-  
+
+  @Test
+  public void testTextDecode() throws Exception {
+    // Text encoding (each 3 values are in 2 bytes)
+    // a b c = 14 15 16
+    // 16 bit = (1600 * 14) + (40 * 15) + 16 + 1 = 23017
+    // 1st codeword = 23017 div 256 = 89
+    // 2nd codeword = 23017 mod 256 = 233
+
+    // ° = 1 30 4
+    // 16 bit = (1600 * 1) + (40 * 30) + 4 + 1 = 2805
+    // 1st codeword = 2805 div 256 = 10
+    // 2nd codeword = 2805 mod 256 = 245
+    byte[] bytes = {(byte) 239 ,
+                    (byte) (89),  (byte) (233),
+                    (byte) (10),  (byte) (245)
+                    };
+    String decodedString = DecodedBitStreamParser.decode(bytes).getText();
+    assertEquals("abc°", decodedString);
+  }
+
+  @Test
+  public void testTextAndAsciiStandardDecode() throws Exception {
+    // Text encoding and then immediately goes back to ASCII standard encoding
+    byte[] bytes = {(byte) 239 ,      (byte) (254),
+                    (byte) ('a' + 1), (byte) ('b' + 1), (byte) ('c' + 1)};
+    String decodedString = DecodedBitStreamParser.decode(bytes).getText();
+    assertEquals("abc", decodedString);
+  }
+
+
+
   // TODO(bbrown): Add test cases for each encoding type
   // TODO(bbrown): Add test cases for switching encoding types
 }
